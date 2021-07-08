@@ -1,0 +1,39 @@
+FROM nexuscoe.rjil.ril.com:5115/jioent/health/jio-python-base:3.8-slim
+
+RUN apt-get update && apt-get install -y build-essential
+
+RUN mkdir -p /usr/src/app
+WORKDIR /usr/src/app
+
+# setting up private python feed
+# COPY pip_config_file .
+# ENV PIP_CONFIG_FILE "/usr/src/app/pip_config_file"
+
+# Proxy for external dependencies
+ARG PROXY_HTTP
+ARG PROXY_HTTPS
+ARG PROXY_NO
+ARG MONGO_CONNECTION_STRING
+ENV http_proxy $PROXY_HTTP
+ENV https_proxy $PROXY_HTTPS
+ENV no_proxy $PROXY_NO
+ENV MONGO_CONNECTION_STRING $MONGO_CONNECTION_STRING
+
+# Installing requirements
+
+COPY test-requirements.txt .
+RUN pip3 install --upgrade pip
+RUN pip3 install -r test-requirements.txt
+
+# Removing Proxy after installing external dependencies
+ENV http_proxy ""
+ENV https_proxy ""
+ENV no_proxy ""
+
+# Adding remaining files
+ADD . .
+
+ENV PYTHONPATH "${PYTHONPATH}:/usr/src/app"
+
+CMD ["make", "lint"]
+
